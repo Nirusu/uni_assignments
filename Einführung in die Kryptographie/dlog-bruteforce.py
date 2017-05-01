@@ -2,8 +2,8 @@
 p = int(input("p = "))
 alpha = int(input("alpha = "))
 beta = int(input("beta = "))
-x = alpha
-counter = 1
+x = 1
+counter = 0
 while x != beta:
     x = x * alpha % p
     counter += 1
