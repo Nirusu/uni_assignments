@@ -548,19 +548,20 @@ int get_random_exponent(mpz_t e, int bits)
 
 int exponentiate_binary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, long *count_S, long *count_M)
 {
-	int exponent_length = mpz_sizeinbase(e, 2);
-	result = g;
-	for (int i = exponent_length - 1; i < 0; i--)
+	mpz_set(result, g);
+	unsigned number_of_bits_exponent = mpz_sizeinbase(e, 2) - 1;
+	for(int i = number_of_bits_exponent - 1; i>=0; i--)
 	{
-		mpz_powm(result, g, e, modulus);
+		mpz_mul(result, result, result);
+		mpz_mod(result, result, modulus);
 		(*count_S)++;
 		if (mpz_tstbit(e, i) == 1)
 		{
 			mpz_mul(result, result, g);
+			mpz_mod(result, result, modulus);
 			(*count_M)++;
 		}
 	}
-
 	return 0; /* replace by "return 0" once you have an implementation */
 }
 
