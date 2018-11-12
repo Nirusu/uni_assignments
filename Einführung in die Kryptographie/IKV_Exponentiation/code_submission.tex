@@ -1,0 +1,140 @@
+\documentclass[11pt, a4paper, onecolumn, oneside]{scrartcl}
+\pagestyle{empty}
+
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{pdflscape}
+
+\definecolor{commentColor}{rgb}{0,0.6,0}
+\definecolor{numColor}{rgb}{0.6,0.6,0.6}
+\definecolor{stringColor}{rgb}{0.1,0.32,1.0}
+\definecolor{backgroundColour}{rgb}{0.95,0.95,0.92}
+\definecolor{keywordColor}{rgb}{0.0,0.18,0.7}
+
+
+\lstdefinestyle{CStyle}{
+    backgroundcolor=\color{backgroundColour},   
+    commentstyle=\color{commentColor},
+    keywordstyle=\color{keywordColor},
+    numberstyle=\tiny\color{numColor},
+    stringstyle=\color{stringColor},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    language=C
+}
+
+
+\begin{document}
+
+{~}
+
+\vspace{-2cm} \noindent WS 2018/19 \hfill
+Implementierung kryptographischer Verfahren
+\hfill Prof.\ Christof Paar
+
+{~}
+
+\begin{center}
+        {\huge \textbf{Project I -- \emph{Code Submission}}}\\
+        {~}\\
+        {\large Name: Max Mustermann} \\  %TODO: CHANGE NAME HERE
+				{\large Matrikelnummer: 108XXXXXXXXX} %TODO: CHANGE MATRIKELNUMMER HERE
+\end{center}
+
+{\large \textbf{Programming Assignment Report}}
+%-----------------------------------------
+%TODO: Fill these tables with your results
+%-----------------------------------------
+\begin{landscape}
+\begin{table}[h]
+\hspace{-4cm}
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c}
+\hline
+&\multicolumn{3}{c|}{$k = \rule{1em}{0ex}$}
+&\multicolumn{3}{c|}{$k = \rule{1em}{0ex}$}
+&\multicolumn{3}{c|}{$k = \rule{1em}{0ex}$}
+&\multicolumn{3}{c|}{$k = \rule{1em}{0ex}$}
+&\multicolumn{3}{c|}{$k = \rule{1em}{0ex}$}
+&$k_{\mbox{opt}}$\\
+        &{\small \#S/} &{\small \#M/} &{\small $t$}
+        &{\small \#S} &{\small \#M} &{\small $t$}
+        &{\small \#S} &{\small \#M} &{\small $t$}
+        &{\small \#S} &{\small \#M} &{\small $t$}
+        &{\small \#S} &{\small \#M} &{\small $t$} &\\
+        &{\small \#D} &{\small \#A} &&&&&&&&&&&&&&\\
+\hline\hline
+binary &  &  & &-&-&- &-&-&- &-&-&- &-&-&- &-\\
+\hline
+$k$-ary &	&	&	&	&	& &	&	& &	&	& &	&	& &\\
+\hline
+sl.\ window &	&	&	&	&	& &	&	& &	&	& &	&	& &\\
+\hline
+fixed base & & & &-&-&- &-&-&- &-&-&- &-&-&- &-\\
+\hline
+impr.\ fixed base &	&	&	&	&	& &	&	& &	&	& &	&	& &\\
+\hline\hline
+double-and-add & & & &-&-&- &-&-&- &-&-&- &-&-&- &-\\
+\hline
+NAF repr. & & & &-&-&- &-&-&- &-&-&- &-&-&- &-\\
+\hline
+%\end{small}
+\end{tabular}
+\caption{160 bit}
+
+\hspace{-4cm}
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c}
+\hline
+&\multicolumn{3}{c|}{$k = \rule{1em}{0ex}$}
+&\multicolumn{3}{c|}{$k = \rule{1em}{0ex}$}
+&\multicolumn{3}{c|}{$k = \rule{1em}{0ex}$}
+&\multicolumn{3}{c|}{$k = \rule{1em}{0ex}$}
+&\multicolumn{3}{c|}{$k = \rule{1em}{0ex}$}
+&$k_{\mbox{opt}}$\\
+        &{\small \#S/} &{\small \#M/} &{\small $t$}
+        &{\small \#S} &{\small \#M} &{\small $t$}
+        &{\small \#S} &{\small \#M} &{\small $t$}
+        &{\small \#S} &{\small \#M} &{\small $t$}
+        &{\small \#S} &{\small \#M} &{\small $t$} &\\
+        &{\small \#D} &{\small \#A} &&&&&&&&&&&&&&\\
+\hline\hline
+binary &  &  & &-&-&- &-&-&- &-&-&- &-&-&- &-\\
+\hline
+$k$-ary &	&	&	&	&	& &	&	& &	&	& &	&	& &\\
+\hline
+sl.\ window &	&	&	&	&	& &	&	& &	&	& &	&	& &\\
+\hline
+fixed base & & & &-&-&- &-&-&- &-&-&- &-&-&- &-\\
+\hline
+impr.\ fixed base &	&	&	&	&	& &	&	& &	&	& &	&	& &\\
+\hline
+%\hline\hline
+%double-and-add & & & &-&-&- &-&-&- &-&-&- &-&-&- &-\\
+%\hline
+%NAF repr. & & & &-&-&- &-&-&- &-&-&- &-&-&- &-\\
+%\hline
+%\end{small}
+\end{tabular}
+\caption{1024 bit}
+\end{table}
+\end{landscape}
+
+
+{\large \textbf{File: exp.c}}
+\begin{lstlisting}[style=CStyle]
+ %TODO: PASTE THE WHOLE CODE FROM exp.c HERE 
+
+\end{lstlisting}
+
+
+
+
+\end{document}
