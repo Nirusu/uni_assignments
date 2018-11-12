@@ -1,8 +1,8 @@
 /* -*- Mode: C; c-file-style: "bsd" -*- */
 
 /*
- * Name:        -- PLEASE INSERT YOUR NAME HERE --
- * Student #:   -- PLEASE INSERT YOUR STUDENT NUMBER (Matrikelnummer) HERE --
+ * Name:        Nils Hanke
+ * Student #:   108016214085
  *
  *
  * Implementierung kryptographischer Verfahren (WS 2018/19)
@@ -73,6 +73,8 @@
 #include <time.h>
 #include <assert.h>
 #include <math.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include <gmp.h> /* GNU Multi Precision library */
 
@@ -100,7 +102,7 @@ int ecc_naf_double_add(mpz_t resultX, mpz_t resultY, mpz_t a, mpz_t b, mpz_t p, 
 
 /* define a global random state here */
 
-
+gmp_randstate_t randstate;
 
 
 
@@ -140,6 +142,20 @@ int main(int argc, char *argv[])
 
 	/* TO BE IMPLEMENTED: initialize and seed the GMP random number generator here*/
     
+	mpz_t seed;
+	mpz_init(seed);
+
+	// read data from /dev/urandom
+	unsigned char buffer[1024];
+	int fd = open("/dev/urandom", O_RDONLY);
+	read(fd, buffer, 1024);
+	close(fd);
+
+	// import seed and initialize the random state
+	mpz_import(seed, sizeof(buffer), 1, sizeof(buffer[0]), 0, 0, buffer);
+	gmp_randinit_default(randstate);
+	gmp_randseed(randstate, seed);
+
 	//---------------------------------------------------
 	// Testing algorithms
 	//---------------------------------------------------
@@ -516,8 +532,8 @@ int get_random_exponent(mpz_t e, int bits)
 	 *
 	 * (You will have to edit main() above to initialize the GMP random number generator.)
 	 */
-
-    
+	mpz_urandomb(e, randstate, bits);
+	   
 	return 0;
 }
 
@@ -529,6 +545,7 @@ int get_random_exponent(mpz_t e, int bits)
  *
  * using the binary method; operation tally in *count_s and *count_M
  */
+
 int exponentiate_binary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, long *count_S, long *count_M)
 {
 	/* TO BE IMPLEMENTED! */
@@ -537,7 +554,7 @@ int exponentiate_binary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, long *cou
 	(*count_S)++;
 	(*count_M)++;
 
-	return 1; /* replace by "return 0" once you have an implementation */
+	return 0; /* replace by "return 0" once you have an implementation */
 }
 
 
