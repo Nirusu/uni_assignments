@@ -72,9 +72,10 @@
 #include <stdlib.h>
 #include <time.h>
 #include <assert.h>
-#include <math.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <math.h>
+#include <string.h>
 
 #include <gmp.h> /* GNU Multi Precision library */
 
@@ -155,6 +156,7 @@ int main(int argc, char *argv[])
 	mpz_import(seed, sizeof(buffer), 1, sizeof(buffer[0]), 0, 0, buffer);
 	gmp_randinit_default(randstate);
 	gmp_randseed(randstate, seed);
+	mpz_clear(seed);
 
 	//---------------------------------------------------
 	// Testing algorithms
@@ -548,13 +550,20 @@ int get_random_exponent(mpz_t e, int bits)
 
 int exponentiate_binary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, long *count_S, long *count_M)
 {
+	// A = g
 	mpz_set(result, g);
+
+	// get number of length in Binary representation
 	unsigned number_of_bits_exponent = mpz_sizeinbase(e, 2) - 1;
+
+	// square on every digit
 	for(int i = number_of_bits_exponent - 1; i>=0; i--)
 	{
 		mpz_mul(result, result, result);
 		mpz_mod(result, result, modulus);
 		(*count_S)++;
+
+		// Multiply on 1's
 		if (mpz_tstbit(e, i) == 1)
 		{
 			mpz_mul(result, result, g);
@@ -576,13 +585,63 @@ int exponentiate_binary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, long *cou
  */
 int exponentiate_k_ary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, int k, long *count_S, long *count_M)
 {
-	/* TO BE IMPLEMENTED! */
+	// Precomputation
+	// Since there's no math libary in the compile options, there's no math library, making pow not usable and GMP annoying to use for allocations. So let's do this here instead...
+	int lut_size = pow(2, k);
+	int tuple = 0;
+	unsigned number_of_bits_exponent = mpz_sizeinbase(e, 2) - 1;
 
-	/* Whenever performing a modular squaring or multiplication, count the operations like this: */
-	(*count_S)++;
-	(*count_M)++;
+	
+	// bad workaround for missing pow
+	//for (int i=k; i>0; i--)
+	////	lut_size *= 2;
+	//}
 
-	return 1; /* replace by "return 0" once you have an implementation */
+	// create the LUT
+	mpz_t *lut = malloc(sizeof(mpz_t) * (lut_size - 1));
+
+	mpz_init(lut[0]);
+	// set the first value in the LUT to 0, because we never multiply with 1 anyway, just with g in the worst case.
+	mpz_set(lut[0], g);
+
+	for (int i = 1; i < (lut_size - 1); i++)
+	{
+		mpz_init(lut[i]);
+		mpz_mul(lut[i], lut[i-1], g);
+		mpz_mod(lut[i], lut[i], modulus);
+		(*count_M)++;
+	}
+
+	// Computation
+
+	// start with '1' as result so we have a neutral value for the first multiplication
+	mpz_set_str(result, "1", 10);
+
+	for (int i = number_of_bits_exponent; i >= 0; i--)
+	{
+		// Just as Squary-And-Multiply, we multiply with each digit.
+		mpz_mul(result, result, result);
+        mpz_mod(result, result, modulus);
+        (*count_S)++;
+
+		// Collect tuples of k size. Use trick with pow(2) because dealing with tuples is gonna be hairy in C
+		if (mpz_tstbit(e, i) == 1)
+		{
+			tuple += pow(2, i % k);
+		}
+
+		// If our tuple doesn't consist out of zeros (which would destroy our result) and we collected a k-tuple, multiply it.
+		if (tuple > 0 && i % k == 0)
+		{
+			mpz_mul(result, result, lut[tuple - 1]);
+			mpz_mod(result, result, modulus);
+			(*count_M)++;
+
+			// reset for the next tuple iterations
+			tuple = 0;
+		}
+	}
+	return 0; /* replace by "return 0" once you have an implementation */
 }
 
 /*
