@@ -876,11 +876,79 @@ int ecc_double_add(mpz_t resultX, mpz_t resultY, mpz_t a, mpz_t b, mpz_t p, mpz_
  */
 int ecc_naf_double_add(mpz_t resultX, mpz_t resultY, mpz_t a, mpz_t b, mpz_t p, mpz_t q, mpz_t inputX, mpz_t inputY, mpz_t factor, long *count_D, long *count_A)
 {
-	/* TO BE IMPLEMENTED! */
+	// This time we're getting the real length of the factor, - without -1 -, since we need to process the whole number without inits first.
+	int number_of_bits_factor = mpz_sizeinbase(factor, 2) - 1;
+	int number_of_bits_factor_full = mpz_sizeinbase(factor, 2);
 
-	/* Whenever performing a double or add, count the operations like this: */
-	(*count_D)++;
-	(*count_A)++;
+	// Array with the NAF representation. + 1 because the NAF representation is usually one digit longer. 
+	char naf_representation[number_of_bits_factor_full + 1];
 
-	return 1; /* replace by "return 0" once you have an implementation */
+	// Algorithm 3.5 - Computing the NAF of a positive integer
+	mpz_t X;
+	mpz_t inputY_inverse;
+	// Step 1
+	int i = 0;
+	mpz_init(X);
+	mpz_set(X, factor);
+
+	// Step 2
+	while (mpz_cmp_ui(X, 1) >= 0)
+	{
+		if (mpz_odd_p(X))
+		{
+			naf_representation[i] = (2 - mpz_fdiv_ui(X, 4));
+			if (naf_representation[i] > 0)
+			{
+				mpz_sub_ui(X,X,1);
+			}
+			// - (-1) = + 1
+			else if (naf_representation[i] < 0)
+			{
+				mpz_add_ui(X,X,1);
+			}
+		}
+		// Step 2.2
+		else
+		{
+			naf_representation[i] = 0;
+		}
+		// Step 2.3
+		mpz_divexact_ui(X, X, 2);
+		i++;
+	} 
+	// NAD Double and Add
+	// Pretty much the same as above, just with calculating the inverse and adding the inverse on a -1
+
+	// Reduce factor with the prime group as required
+	mpz_mod(factor, factor, q);
+
+	// Calculate inverse from inputY. Only Y required because the inverse is as followed: (x, y) -> (x, -y)
+	mpz_init(inputY_inverse);
+	mpz_sub(inputY_inverse, p, inputY);
+
+	// Init: result = input
+	mpz_set(resultX, inputX);
+	mpz_set(resultY, inputY);
+
+	for (int i = (number_of_bits_factor); i >= 0; i--)
+	{
+		// Double point for every digit in the factor
+		ecc_op_double(resultX, resultY, a, b, p, resultX, resultY);
+		(*count_D)++;
+
+		// If we have a 1 in the factor, do an additional add
+		if(naf_representation[i] == 1)
+		{
+			ecc_op_add(resultX, resultY, a, b, p, resultX, resultY, inputX, inputY);
+			(*count_A)++;
+		}
+		// Else if we do have a -1, do an additional add with the inverse (= substract the point)
+		else if (naf_representation[i] == -1)
+		{
+			ecc_op_add(resultX, resultY, a, b, p, resultX, resultY, inputX, inputY_inverse);
+			(*count_A)++;
+		}
+	}
+
+	return 0; /* replace by "return 0" once you have an implementation */
 }
