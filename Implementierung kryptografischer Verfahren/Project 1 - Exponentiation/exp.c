@@ -554,10 +554,10 @@ int exponentiate_binary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, long *cou
 	mpz_set(result, g);
 
 	// get number of length in Binary representation
-	unsigned number_of_bits_exponent = mpz_sizeinbase(e, 2) - 1;
+	unsigned number_of_bits_factor = mpz_sizeinbase(e, 2) - 1;
 
 	// square on every digit
-	for(int i = number_of_bits_exponent - 1; i>=0; i--)
+	for(int i = number_of_bits_factor - 1; i>=0; i--)
 	{
 		mpz_mul(result, result, result);
 		mpz_mod(result, result, modulus);
@@ -589,7 +589,7 @@ int exponentiate_k_ary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, int k, lon
 	// Since there's no math libary in the compile options, there's no math library, making pow not usable and GMP annoying to use for allocations. So let's do this here instead...
 	int lut_size = (1 << k);
 	int tuple = 0;
-	unsigned number_of_bits_exponent = mpz_sizeinbase(e, 2) - 1;
+	unsigned number_of_bits_factor = mpz_sizeinbase(e, 2) - 1;
 
 	// create the LUT
 	mpz_t *lut = malloc(sizeof(mpz_t) * (lut_size - 1));
@@ -611,7 +611,7 @@ int exponentiate_k_ary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, int k, lon
 	// start with '1' as result so we have a neutral value for the first multiplication
 	mpz_set_str(result, "1", 10);
 
-	for (int i = number_of_bits_exponent; i >= 0; i--)
+	for (int i = number_of_bits_factor; i >= 0; i--)
 	{
 		// Just as Squary-And-Multiply, we multiply with each digit.
 		mpz_mul(result, result, result);
@@ -649,7 +649,7 @@ int exponentiate_k_ary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, int k, lon
 int exponentiate_sliding_window(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, int k, long *count_S, long *count_M)
 {
 	int lut_size = (1 << (k-1));
-	unsigned number_of_bits_exponent = mpz_sizeinbase(e, 2) - 1;
+	unsigned number_of_bits_factor = mpz_sizeinbase(e, 2) - 1;
 	int tuple = 0;
 	int window_length = 0;
 	mpz_t *lut = malloc(sizeof(mpz_t) * (lut_size));
@@ -683,7 +683,7 @@ int exponentiate_sliding_window(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, i
 	// start with '1' as result so we have a neutral value for the first multiplication
 	mpz_set_str(result, "1", 10);
 
-	for (int i = number_of_bits_exponent; i>=0;)
+	for (int i = number_of_bits_factor; i>=0;)
 	{
 		// gmp_printf("Bit %i = %Zd \n", i, result);
 		// On 0's, just do simple squaring as in every other previous algorithm
@@ -836,13 +836,32 @@ int exponentiate_improved_fixed_based(mpz_t result, mpz_t e, mpz_t modulus, mpz_
  */
 int ecc_double_add(mpz_t resultX, mpz_t resultY, mpz_t a, mpz_t b, mpz_t p, mpz_t q, mpz_t inputX, mpz_t inputY, mpz_t factor, long *count_D, long *count_A)
 {
-	/* TO BE IMPLEMENTED! */
+	int number_of_bits_factor = mpz_sizeinbase(factor, 2) - 1;
 
-	/* Whenever performing a double or add, count the operations like this: */
-	(*count_D)++;
-	(*count_A)++;
+	// Reduce factor with the prime group as required
+	mpz_mod(factor, factor, q);
 
-	return 1; /* replace by "return 0" once you have an implementation */
+	// Implementing Double-and-Add as described in "Understanding Cryptography"
+
+	// Init: result = input
+	mpz_set(resultX, inputX);
+	mpz_set(resultY, inputY);
+
+	for (int i = (number_of_bits_factor - 1); i >= 0; i--)
+	{
+		// Double point for every digit in the factor
+		ecc_op_double(resultX, resultY, a, b, p, resultX, resultY);
+		(*count_D)++;
+
+		// If we have a 1 in the factor, do an additional add
+		if(mpz_tstbit(factor, i) == 1)
+		{
+			ecc_op_add(resultX, resultY, a, b, p, resultX, resultY, inputX, inputY);
+			(*count_A)++;
+		}
+	}
+
+	return 0; /* replace by "return 0" once you have an implementation */
 }
 
 /*
