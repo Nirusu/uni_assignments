@@ -74,7 +74,6 @@
 #include <assert.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <string.h>
 
 #include <gmp.h> /* GNU Multi Precision library */
 
@@ -231,6 +230,8 @@ int main(int argc, char *argv[])
 	// compare results of sliding window and mpz_pow
 	r = exponentiate_sliding_window(result, g, test_e, modulus,
 			test_k, &cs, &cm);
+	// gmp_printf("%Zd \n", result);
+	// gmp_printf("%Zd \n", test_res);
 	if (!mpz_cmp(result, test_res)){
 		printf("Sliding window works properly\n");
 	} else {
@@ -590,17 +591,11 @@ int exponentiate_k_ary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, int k, lon
 	int tuple = 0;
 	unsigned number_of_bits_exponent = mpz_sizeinbase(e, 2) - 1;
 
-	
-	// bad workaround for missing pow
-	//for (int i=k; i>0; i--)
-	////	lut_size *= 2;
-	//}
-
 	// create the LUT
 	mpz_t *lut = malloc(sizeof(mpz_t) * (lut_size - 1));
 
+	// set the first value in the LUT to 0, because we never multiply with 1 anyway. Just with g in the worst case.
 	mpz_init(lut[0]);
-	// set the first value in the LUT to 0, because we never multiply with 1 anyway, just with g in the worst case.
 	mpz_set(lut[0], g);
 
 	for (int i = 1; i < (lut_size - 1); i++)
@@ -626,7 +621,6 @@ int exponentiate_k_ary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, int k, lon
 		// Collect tuples of k size. Use trick with pow(2) because dealing with tuples is gonna be hairy in C
 		if (mpz_tstbit(e, i) == 1)
 		{
-			// tuple += pow(2, i % k);
 			tuple += (1 << (i % k));
 		}
 
@@ -654,13 +648,96 @@ int exponentiate_k_ary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, int k, lon
  */
 int exponentiate_sliding_window(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, int k, long *count_S, long *count_M)
 {
-	/* TO BE IMPLEMENTED! */
-
-	/* Whenever performing a modular squaring or multiplication, count the operations like this: */
+	int lut_size = (1 << (k-1));
+	unsigned number_of_bits_exponent = mpz_sizeinbase(e, 2) - 1;
+	int tuple = 0;
+	int window_length = 0;
+	mpz_t *lut = malloc(sizeof(mpz_t) * (lut_size));
+	mpz_t g2;
+	 
+	// Precomputation
+	
+	// Since this time the LUT is based on g^2, we calculate g2 beforehand case and can free it after generating the LUT.
+	mpz_init(g2);
+	mpz_mul(g2, g, g);
+	mpz_mod(g2, g2, modulus);
 	(*count_S)++;
-	(*count_M)++;
 
-	return 1; /* replace by "return 0" once you have an implementation */
+	// First entry in the LUT is g. Same as the normal k-ary, we don't need 1, so LUT[0] is g instead.
+	mpz_init(lut[0]);
+	mpz_set(lut[0], g);
+	
+	// Generate rest of the LUT by multiplications with g^2
+	for (int i = 1; i < lut_size; i++)
+	{
+		mpz_init(lut[i]);
+		mpz_mul(lut[i], lut[i-1], g2);
+		mpz_mod(lut[i], lut[i], modulus);
+		(*count_M)++;
+	} 
+
+	// Sinde we only deal with odd values in the LOT, we can release g2 as it has served its purpose.
+	mpz_clear(g2);
+
+	// Computation
+	// start with '1' as result so we have a neutral value for the first multiplication
+	mpz_set_str(result, "1", 10);
+
+	for (int i = number_of_bits_exponent; i>=0;)
+	{
+		// gmp_printf("Bit %i = %Zd \n", i, result);
+		// On 0's, just do simple squaring as in every other previous algorithm
+		if (mpz_tstbit(e, i) == 0)
+		{
+			mpz_mul(result, result, result);
+			mpz_mod(result, result, modulus);
+			(*count_S)++;
+
+			// manually decrement since we have to decrement on another way if we're dealing with the windows
+			i--;
+		}
+
+		// If we have a 1...
+		else
+		{
+			// Tuple contains the tuple combined as a number
+			tuple = 1;
+			// Now that we have a *sliding* window, we need to calculate how large a window is each time, as it could be smaller than k.
+			window_length = 0;
+			for (int j = 1; j < k; j++)
+			{
+				if (mpz_tstbit(e, i - j) == 1)
+				{
+                  	// Same trick as k-ary: Treat the tuples with their respective power so we get an integer equivilant of the (max.) k bits in binary representation.
+					// Add 1 to fix the offset from the binary -> int conversion.
+					// And for some reason, *= doesn't work here (why?), so using the long variation...
+					tuple = tuple * (1 << (j-window_length)) + 1;
+					// Adjust the window length to the actual amount of values we have in our 'sliding' window. Cannot be greater than k. 
+					window_length = j;
+				}
+			}
+
+			// Do as many squares as required for our window
+			for (int j = 0; j <= window_length; j++)
+			{
+				mpz_mul(result, result, result);
+				mpz_mod(result, result, modulus);
+				(*count_S)++;
+			}
+
+			// Now multiply with the corresponding entry from the LUT, and we should be done!
+			// Division by 2 to convert the int tuple to the LUT index.
+			tuple /= 2;
+			mpz_mul(result, result, lut[tuple]);
+			mpz_mod(result, result, modulus);
+			(*count_M)++;
+
+			// After dealing with our sliding window, we can skip ahead so we aren't processing certain bits twice.
+			i -= window_length + 1;
+		}
+	}
+
+	return 0; /* replace by "return 0" once you have an implementation */
 }
 
 /*
