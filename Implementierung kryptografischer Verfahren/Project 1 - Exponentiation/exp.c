@@ -74,7 +74,6 @@
 #include <assert.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <math.h>
 #include <string.h>
 
 #include <gmp.h> /* GNU Multi Precision library */
@@ -587,7 +586,7 @@ int exponentiate_k_ary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, int k, lon
 {
 	// Precomputation
 	// Since there's no math libary in the compile options, there's no math library, making pow not usable and GMP annoying to use for allocations. So let's do this here instead...
-	int lut_size = pow(2, k);
+	int lut_size = (1 << k);
 	int tuple = 0;
 	unsigned number_of_bits_exponent = mpz_sizeinbase(e, 2) - 1;
 
@@ -627,7 +626,8 @@ int exponentiate_k_ary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, int k, lon
 		// Collect tuples of k size. Use trick with pow(2) because dealing with tuples is gonna be hairy in C
 		if (mpz_tstbit(e, i) == 1)
 		{
-			tuple += pow(2, i % k);
+			// tuple += pow(2, i % k);
+			tuple += (1 << (i % k));
 		}
 
 		// If our tuple doesn't consist out of zeros (which would destroy our result) and we collected a k-tuple, multiply it.
