@@ -571,7 +571,7 @@ int exponentiate_binary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, long *cou
 			(*count_M)++;
 		}
 	}
-	return 0; /* replace by "return 0" once you have an implementation */
+	return 0; 
 }
 
 
@@ -635,7 +635,8 @@ int exponentiate_k_ary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, int k, lon
 			tuple = 0;
 		}
 	}
-	return 0; /* replace by "return 0" once you have an implementation */
+	mpz_clear(lut);
+	return 0; 
 }
 
 /*
@@ -736,8 +737,8 @@ int exponentiate_sliding_window(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, i
 			i -= window_length + 1;
 		}
 	}
-
-	return 0; /* replace by "return 0" once you have an implementation */
+	mpz_clear(lut);
+	return 0; 
 }
 
 /*
@@ -861,7 +862,7 @@ int ecc_double_add(mpz_t resultX, mpz_t resultY, mpz_t a, mpz_t b, mpz_t p, mpz_
 		}
 	}
 
-	return 0; /* replace by "return 0" once you have an implementation */
+	return 0;
 }
 
 /*
@@ -949,6 +950,8 @@ int ecc_naf_double_add(mpz_t resultX, mpz_t resultY, mpz_t a, mpz_t b, mpz_t p, 
 			(*count_A)++;
 		}
 	}
-
-	return 0; /* replace by "return 0" once you have an implementation */
+	mpz_clear(X);
+	mpz_clear(inputY_inverse);
+	
+	return 0;
 }
