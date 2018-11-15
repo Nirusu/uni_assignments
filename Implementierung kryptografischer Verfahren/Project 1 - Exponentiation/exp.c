@@ -530,13 +530,7 @@ int ecc_op_add(mpz_t resultX, mpz_t resultY, mpz_t a, mpz_t b, mpz_t p, mpz_t op
 /* Generate a random positive integer up to e bits */
 int get_random_exponent(mpz_t e, int bits)
 {
-	/*
-	 * TO BE IMPLEMENTED!
-	 *
-	 * (You will have to edit main() above to initialize the GMP random number generator.)
-	 */
 	mpz_urandomb(e, randstate, bits);
-	   
 	return 0;
 }
 
@@ -750,6 +744,7 @@ int exponentiate_sliding_window(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, i
 		mpz_clear(lut[i]);
 	}
 	free(lut);
+	mpz_clear(g2);
 	return 0; 
 }
 
@@ -865,7 +860,7 @@ int exponentiate_fixed_based(mpz_t result, mpz_t e, mpz_t modulus, mpz_t *lut, s
 		}
 	}
 
-	return 0; /* replace by "return 0" once you have an implementation */
+	return 0; 
 }
 /*
  * Perform the modular exponentiation
@@ -926,6 +921,7 @@ int exponentiate_improved_fixed_based(mpz_t result, mpz_t e, mpz_t modulus, mpz_
 		mpz_mod(result, result, modulus);
 		(*count_M)++;
 	}
+	mpz_clear(B);
 	return 0; 
 }
 
@@ -1056,6 +1052,6 @@ int ecc_naf_double_add(mpz_t resultX, mpz_t resultY, mpz_t a, mpz_t b, mpz_t p, 
 	}
 	mpz_clear(X);
 	mpz_clear(inputY_inverse);
-
+	
 	return 0;
 }
