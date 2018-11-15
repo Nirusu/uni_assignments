@@ -744,7 +744,6 @@ int exponentiate_sliding_window(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, i
 		mpz_clear(lut[i]);
 	}
 	free(lut);
-	mpz_clear(g2);
 	return 0; 
 }
 
@@ -1052,6 +1051,5 @@ int ecc_naf_double_add(mpz_t resultX, mpz_t resultY, mpz_t a, mpz_t b, mpz_t p, 
 	}
 	mpz_clear(X);
 	mpz_clear(inputY_inverse);
-	
 	return 0;
 }
