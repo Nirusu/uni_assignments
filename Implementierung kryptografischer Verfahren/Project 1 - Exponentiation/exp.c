@@ -74,6 +74,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <math.h>
 
 #include <gmp.h> /* GNU Multi Precision library */
 
@@ -635,7 +636,12 @@ int exponentiate_k_ary(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, int k, lon
 			tuple = 0;
 		}
 	}
-	mpz_clear(lut);
+	// Cleanup after we're done
+	for (int i=0; i<(lut_size - 1); i++)
+	{
+		mpz_clear(lut[i]);
+	}
+	free(lut);
 	return 0; 
 }
 
@@ -737,7 +743,13 @@ int exponentiate_sliding_window(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, i
 			i -= window_length + 1;
 		}
 	}
-	mpz_clear(lut);
+
+	// Cleanup after we're done
+	for (int i=0; i < lut_size; i++)
+	{
+		mpz_clear(lut[i]);
+	}
+	free(lut);
 	return 0; 
 }
 
@@ -746,8 +758,7 @@ int exponentiate_sliding_window(mpz_t result, mpz_t g, mpz_t e, mpz_t modulus, i
  */
 size_t get_fb_LUT_size(size_t maximal_exponent_length) {
 	
-	/* TO BE IMPLEMENTED! */
-    return 0;
+    return maximal_exponent_length;
 }
 /*
  * Determine the size of the LUT for the improved fixed based exponentiation algorithm.
@@ -755,37 +766,77 @@ size_t get_fb_LUT_size(size_t maximal_exponent_length) {
  * and window_size is 3, then the required LUT size is 2.
  */
 size_t get_imp_fb_LUT_size(size_t maximal_exponent_length, unsigned window_size) {
-    /* TO BE IMPLEMENTED! */
-    return 0;
+	// Since the given exponent length is not *neccessarily divisible*, we round the number up to next full integer.
+	// Would've used ceil() here, but since math.h isn't allowed, we're using this fancy trick which basically does the same as ceil()
+    return (maximal_exponent_length / window_size) + ((maximal_exponent_length % window_size) != 0);
 }
 /*
  * Allocate (and initialize!) the LUT for fixed based exponentiation. The size of the LUT is passed as an argument,
  * therefore this function is used for both regular and improved fixed based exponentiation.
  */
 mpz_t *allocate_fixed_base_LUT(size_t lut_size) {
-    /* TO BE IMPLEMENTED! */
-	return NULL;
+    // Create an array for the LUT. Reserve the memory...
+	mpz_t *lut = malloc(sizeof(mpz_t) * lut_size);
+
+	//... and initialize the array. 
+	for (int i = 0; i < lut_size; i++)
+	{
+		mpz_init(lut[i]);
+	}
+
+	return lut;
 }
 /*
  * Free the LUT for fixed based exponentiation. The size of the LUT is passed as an argument,
  * therefore this function is used for both regular and improved fixed based exponentiation.
  */
 void free_fixed_base_LUT(mpz_t *lut, size_t lut_size) {
-    /* TO BE IMPLEMENTED! */
+	// Clear out the array, removing potential additional memory allocations done by GMP
+    for (int i = 0; i < lut_size; i++)
+	{
+		mpz_clear(lut[i]);
+	}
+	// Free the LUT, releasing memory.
+	free(lut);
 }
 /*
  * Precompute the LUT for regular fixed based exponentiation for base g and modulus n. Base g is not
  * passed as an argument to the actual exponentation.
  */
 void precompute_fixed_base_LUT(mpz_t *lut, mpz_t g, mpz_t n, size_t lut_size) {
-     /* TO BE IMPLEMENTED! */
+     // First entry in the LUT is g
+	 mpz_set(lut[0], g);
+
+	 // Calculate rest of the LUT by squaring the previous entry
+	 for (int i = 1; i < lut_size; i++)
+	 {
+		 mpz_mul(lut[i], lut[i - 1], lut[i - 1]);
+		 mpz_mod(lut[i], lut[i], n);
+	 }
 }
 /*
  * Precompute the LUT for improved fixed based exponentiation for base g and modulus n. Base g is not
  * passed as an argument to the actual exponentation.
  */
 void precompute_improved_fixed_base_LUT(mpz_t *lut, mpz_t g, mpz_t modulus, size_t lut_size, unsigned window_size) {
-     /* TO BE IMPLEMENTED! */
+     // Initilize the base by squaring it with the window_size as often as needed
+	 int base = (1 << window_size);
+
+	 // First entry in the LUT is g
+	 mpz_set(lut[0], g);
+
+	 for (int i = 1; i < lut_size; i++)
+	 {
+		 // Init entry with the previous value
+		 mpz_set(lut[i], lut[i - 1]);
+		 for (int j = 1; j < base; j++)
+		 {
+			// Square the previous entry as often as required for correct base conversion
+			mpz_mul(lut[i], lut[i], lut[i - 1]);
+			mpz_mod(lut[i], lut[i], modulus);
+		 }
+	 }
+
 }
 /*
  * Perform the modular exponentiation
@@ -797,13 +848,24 @@ void precompute_improved_fixed_base_LUT(mpz_t *lut, mpz_t g, mpz_t modulus, size
  */
 int exponentiate_fixed_based(mpz_t result, mpz_t e, mpz_t modulus, mpz_t *lut, size_t maximal_exponent_length, long *count_S, long *count_M) {
 
-    /* TO BE IMPLEMENTED! */
+    // Algorithm 3.8
+	// Step 1
+	// Set the starting result to the last entry of the LUT. -1 because the array index start at 0.
+	mpz_set(result, lut[maximal_exponent_length - 1]);
 
-	/* Whenever performing a modular squaring or multiplication, count the operations like this: */
-	(*count_S)++;
-	(*count_M)++;
+	// Step 2
+	// -2, because the algorithm requires l-1 and we need to substract one time more for the array indexes
+	for (int i = maximal_exponent_length - 2; i >= 0; i--)
+	{
+		if(mpz_tstbit(e,i) == 1)
+		{
+			mpz_mul(result, result, lut[i]);
+			mpz_mod(result, result, modulus);
+			(*count_M)++;
+		}
+	}
 
-	return 1; /* replace by "return 0" once you have an implementation */
+	return 0; /* replace by "return 0" once you have an implementation */
 }
 /*
  * Perform the modular exponentiation
@@ -815,15 +877,57 @@ int exponentiate_fixed_based(mpz_t result, mpz_t e, mpz_t modulus, mpz_t *lut, s
  */
 int exponentiate_improved_fixed_based(mpz_t result, mpz_t e, mpz_t modulus, mpz_t *lut, size_t maximal_exponent_length, unsigned window_size, long *count_S, long *count_M) {
 
-    /* TO BE IMPLEMENTED! */
+    // Algorithm 3.9
 
-	/* Whenever performing a modular squaring or multiplication, count the operations like this: */
-	(*count_S)++;
-	(*count_M)++;
+	// Initilize the base by squaring it with the window_size as often as needed
+	int base = 1 << window_size;
+	int tuple = 0;
+	
+	// A = result and B = B
+	mpz_t B;
+	mpz_init(B);
 
-	return 1; /* replace by "return 0" once you have an implementation */
+	// Step 1
+	// Initialize A and B with 1
+	mpz_set_ui(result, 1);
+	mpz_set_ui(B, 1);
+
+	// Step 2
+	for (int j = (base - 1); j > 0; j--)
+	{
+		// Use same trick as in sliding-window k-ary: work with tuples by squaring a single integer as often as needed
+		tuple = 0;
+
+		for (int i = (maximal_exponent_length - 1); i >= 0; i--)
+		{
+			// For every digit, left shift for correct base representation
+			tuple = tuple << 1;
+			// If we have a one, add it to the tuple. This is likely going to get shifted to the correct base in the next iteration.
+			if(mpz_tstbit(e, i) == 1)
+			{
+				tuple++;
+			}
+
+			// Step 2.1
+			if (i % window_size == 0)
+			{
+				// For every window, we check if the window matches with j. If so, we calculate (B * g^(b^l) mod n).
+				if (tuple == j)
+				{
+					mpz_mul(B, B, lut[i / window_size]);
+					mpz_mod(B, B, modulus);
+					(*count_M)++;
+				}
+				tuple = 0;
+			}
+		}
+		// Step 2.2
+		mpz_mul(result, result, B);
+		mpz_mod(result, result, modulus);
+		(*count_M)++;
+	}
+	return 0; 
 }
-
 
 /*
  * Perform the elliptic curve multiplication
@@ -952,6 +1056,6 @@ int ecc_naf_double_add(mpz_t resultX, mpz_t resultY, mpz_t a, mpz_t b, mpz_t p, 
 	}
 	mpz_clear(X);
 	mpz_clear(inputY_inverse);
-	
+
 	return 0;
 }
