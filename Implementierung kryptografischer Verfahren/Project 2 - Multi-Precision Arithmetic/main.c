@@ -15,7 +15,7 @@
 int main ()
 {
   test_school_add();
- // test_mul_limb();
+  test_mul_limb();
  // test_mul_base();
   //  test_school_mul();
   // test_rec_mul();
