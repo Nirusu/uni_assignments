@@ -137,7 +137,24 @@ void mpz_mul_limb(mpz_t c, mpz_t a, mp_limb_t b)
  */
 void mpz_mul_base(mpz_t c, mpz_t a, mp_size_t i)
 {
+    mp_limb_t a_limb;
 
+    // Use temporary variable in case a := a...
+    mpz_t a_temp;
+    mpz_init(a_temp);
+    mpz_set(a_temp, a);
+
+    mpz_set_str(c, "0", 10);
+
+    // For every digit, get the current digit and set i digits in the further direction -> left shift by i
+    for (int j = mpz_size(a_temp) + 1; j >= 0; j--)
+    {
+        a_limb = mpz_getlimbn(a_temp, j);
+        mpz_setlimbn(c, a_limb, i + j);
+    }
+
+    // Clear temporary variable
+    mpz_clear(a_temp);
 }
 
 
