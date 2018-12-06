@@ -1,6 +1,6 @@
 /*! \file mpa_algs.c
  *  \brief Implementation of basic MPA functions.
- *  \author 
+ *  \author Nils Hanke, 108016214085
  *  \date WS18/19
  *  \version 0.3
  *
@@ -29,8 +29,40 @@
  */
 void mpz_school_add(mpz_t c, mpz_t a, mpz_t b)
 {
+    mp_limb_t carry;
+    mp_limb_t a_limb;
+    mp_limb_t b_limb;
+    mp_limb_t temp;
 
+    int i = 0;
+    int size = 0;
+    int size_a = mpz_size(a);
+    int size_b = mpz_size(b);
 
+    mpz_t result;
+    mpz_init(result);
+    mpz_set(result, c);
+
+    if (size_a >= size_b)
+        size = size_a;
+    else
+        size = size_b;
+
+    mpz_set_str(result, "0", 10);
+    carry = 0;
+
+    for (i = 0; i <= size + 1; i++)
+    {
+        a_limb = mpz_getlimbn(a, i);
+        b_limb = mpz_getlimbn(b, i);
+        carry = mp_add_limb(&temp, a_limb, carry);
+        carry += mp_add_limb(&temp, temp, b_limb);
+        mpz_setlimbn(result, temp, i);
+    }
+
+    mpz_setlimbn(result, carry, i+1);
+    mpz_set(c, result);
+    mpz_clear(result);
 }
 
 
