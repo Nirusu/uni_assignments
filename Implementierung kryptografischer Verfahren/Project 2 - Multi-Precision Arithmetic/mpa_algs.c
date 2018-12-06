@@ -169,8 +169,37 @@ void mpz_mul_base(mpz_t c, mpz_t a, mp_size_t i)
  */
 void mpz_school_mul(mpz_t c, mpz_t a, mpz_t b)
 {
+    
+    mp_limb_t a_limb;
+    
+    // Temporary variables for the cases where a, b or c are applied multiple times to the function call
+    mpz_t a_temp;
+    mpz_t b_temp;
+    mpz_init(a_temp);
+    mpz_init(b_temp);
+    mpz_set(a_temp, a);
+    mpz_set(b_temp, b);
 
+    // Temporary variable for our multi-precision result from our single-precision multiplication
+    mpz_t temp;
+    mpz_init(temp);
 
+    // c = 0
+    mpz_set_str(c, "0", 10);
+
+    // For every digit in a, multiply b with a to a temporary variable, shift it to its respective position and add the correct single-precision multiplication to the multi-presicion result
+    for (int i = 0; i <= mpz_size(a_temp) + 1; i++)
+    {
+        a_limb = mpz_getlimbn(a_temp, i);
+        mpz_mul_limb(temp, b_temp, a_limb);
+        mpz_mul_base(temp, temp, i);
+        mpz_school_add(c, c, temp);
+    }
+
+    // Clear out temporary variables
+    mpz_clear(a_temp);
+    mpz_clear(b_temp);
+    mpz_clear(temp);
 }
 
 
